@@ -7,6 +7,15 @@ from sklearn.ensemble import RandomForestClassifier
 from sklearn.metrics import accuracy_score
 import joblib # Used by SageMaker to save/load Sklearn models
 
+def model_fn(model_dir):
+    """
+    Loads the model from the model_dir. This function is called by the 
+    SageMaker Scikit-learn Model Server when the endpoint starts.
+    """
+    # Note: The model_dir points to the folder containing model.joblib
+    model = joblib.load(os.path.join(model_dir, "model.joblib"))
+    return model
+
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     
