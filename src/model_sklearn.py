@@ -15,6 +15,42 @@ def model_fn(model_dir):
     # Note: The model_dir points to the folder containing model.joblib
     model = joblib.load(os.path.join(model_dir, "model.joblib"))
     return model
+# Add these functions to your src/model_sklearn.py
+import numpy as np
+import pandas as pd
+from io import StringIO
+
+def input_fn(request_body, request_content_type):
+    """
+    Custom input function to deserialize the CSV payload and enforce 2D shape.
+    """
+    if request_content_type == 'text/csv':
+        # 1. Read the CSV data using Pandas (which handles reading the string)
+        df = pd.read_csv(StringIO(request_body), header=None)
+        
+        # 2. Convert to NumPy array
+        data = df.values
+        
+        # 3. CRITICAL FIX: Ensure 2D shape (1 sample, 11 features).
+        # This fixes the ValueError: Expected 2D array, got 1D array instead.
+        if data.ndim == 1:
+            data = data.reshape(1, -1)
+            
+        return data
+    
+    raise ValueError(f"Unsupported content type: {request_content_type}")
+
+
+def predict_fn(input_data, model):
+    """
+    Custom prediction function. The input_data is the NumPy array from input_fn.
+    """
+    # The data is already a 2D NumPy array, ready for prediction.
+    prediction = model.predict(input_data)
+    
+    # Return as a list of lists for clean serialization via the default output_fn
+    return prediction.tolist()
+
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
